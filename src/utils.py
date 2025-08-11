@@ -1,14 +1,66 @@
+import os
 import cv2
 import numpy as np
+from collections import Counter
 import pandas as pd
 
+CLASS_MAP = {
+    "Pedestrian": 0,
+    "Biker": 1,
+    "Car": 2,
+    "Bus": 3,
+    "Skater": 4,
+    "Cart": 5,
+}
+
+def ensure_dir(p):
+    os.makedirs(p, exist_ok=True)
+
+def read_annotation_file(path):
+    """
+    Read the Stanford annotation file. Returns list of dicts per row.
+    Each line format: ID xmin ymin xmax ymax frame lost occluded generated "label"
+    """
+    rows = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) < 10:
+                continue
+            track_id = int(parts[0])
+            xmin = float(parts[1]); ymin = float(parts[2])
+            xmax = float(parts[3]); ymax = float(parts[4])
+            frame = int(parts[5])
+            lost = int(parts[6])
+            occluded = int(parts[7])
+            generated = int(parts[8])
+            label = " ".join(parts[9:])
+            # label is enclosed in quotes: "Pedestrian"
+            label = label.strip().strip('"')
+            rows.append({
+                "track_id": track_id,
+                "xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax,
+                "frame": frame,
+                "lost": lost, "occluded": occluded, "generated": generated,
+                "label": label
+            })
+    return rows
+
+def bbox_to_yolo(xmin, ymin, xmax, ymax, img_w, img_h):
+    # return x_center_norm, y_center_norm, w_norm, h_norm
+    x_c = (xmin + xmax) / 2.0
+    y_c = (ymin + ymax) / 2.0
+    w = xmax - xmin
+    h = ymax - ymin
+    return x_c / img_w, y_c / img_h, w / img_w, h / img_h
+
 def get_entry_exit(x, y, w, h, margin=50):
+    # x,y are centers
     if x < margin: return "left"
     if x > w - margin: return "right"
     if y < margin: return "top"
     if y > h - margin: return "bottom"
     return None
-
 def draw_tracks(frame, tracks):
     for t in tracks:
         x1, y1, x2, y2, track_id, cls = t
@@ -244,3 +296,12 @@ def process_frame(frame, frame_number, annotations, frame_width, frame_height, s
               (text_x, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)  # Adjusted y-position, reduced scale and thickness
     
     return annotated_frame
+
+
+def draw_bounding_boxes(frame, boxes):
+    for box in boxes:
+        x1, y1, x2, y2, conf, cls = box
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(frame, f"ID: {cls} Conf: {conf:.2f}", 
+                    (int(x1), int(y1) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+    return frame

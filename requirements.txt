@@ -1,0 +1,11 @@
+ultralytics>=8.0.140
+opencv-python
+numpy
+pandas
+scipy
+filterpy
+lap
+scikit-learn
+tqdm
+# Optional (if you want to use ByteTrack implementation)
+bytetrack-python   # if available; or install a ByteTrack repo manually
