@@ -4,8 +4,8 @@ import glob
 import random
 
 # ================= CONFIG =================
-dataset_path = r"C:\Users\morte\ComputerVisionProject\ComputerVisionProject\dataset"
-split = "test"  # change to 'val' or 'test'
+dataset_path = r"C:\Users\morte\ComputerVisionProject\dataset"
+split = "train"  # change to 'val' or 'test'
 
 images_path = os.path.join(dataset_path, "images", split)
 labels_path = os.path.join(dataset_path, "labels", split)
@@ -51,6 +51,7 @@ def draw_annotations(img, label_file):
     return img
 
 while True:
+    # print(f"Image files: {image_files}")
     image_file = image_files[frame_index]
 
     # Compute label path (preserve subfolder structure)
