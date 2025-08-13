@@ -1,35 +1,45 @@
 # scripts/3_train_yolov8.py
 from ultralytics import YOLO
-import os
+from pathlib import Path
+import shutil, torch, os
 
-DATA_YAML = r"C:\Users\morte\ComputerVisionProject\data.yaml"
-MODEL_SAVE_DIR = r"C:\Users\morte\ComputerVisionProject\models"
-os.makedirs(MODEL_SAVE_DIR, exist_ok=True)
+DATA_YAML = Path(r"C:\Users\morte\ComputerVisionProject\data.yaml")
+MODEL_SAVE_DIR = Path(r"C:\Users\morte\ComputerVisionProject\models")
+MODEL_SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+CKPT_DIR = Path(r"C:\Users\morte\ComputerVisionProject\checkpoints")
+CKPT_DIR.mkdir(parents=True, exist_ok=True)
+
+def backup_ckpt(trainer):
+    src = Path(trainer.save_dir) / "weights" / "last.pt"
+    if src.exists():
+        shutil.copy2(src, CKPT_DIR / "last.pt")
 
 def train():
-    # Choose model size
-    model = YOLO("yolov8s.pt")  # 'yolov8n.pt' for faster, 'yolov8m.pt' for better accuracy
+    model = YOLO("yolov8s.pt")
+    model.add_callback("on_fit_epoch_end", backup_ckpt)
 
-    # Train with TensorBoard logging
+    device = 0 if torch.cuda.is_available() else "cpu"
+    torch.set_num_threads(os.cpu_count() or 1)
+
     model.train(
-        data=DATA_YAML,
-        epochs=80,
-        imgsz=960,
+        data=str(DATA_YAML),
+        epochs=40,
+        imgsz=640,
         batch=8,
-        project=MODEL_SAVE_DIR,
+        project=str(MODEL_SAVE_DIR),
         name="sdd_yolov8s",
         verbose=True,
-        plots=True,       # save loss curves automatically
-        val=True,         # run validation every epoch
-        exist_ok=True,    # overwrite if exists
-        # device=0,         # GPU
-        save_period=5,    # save weights every 5 epochs
-        # workers=4,
-        optimizer="SGD",  # or 'AdamW'
+        plots=True,
+        val=True,
+        exist_ok=True,
+        save_period=5,
+        optimizer="SGD",
+        device=device,
+        workers=0,   # safest on Windows/CPU
     )
 
-    # Optional: You can manually watch results in TensorBoard
-    print("\nTo monitor training in TensorBoard, run:")
+    print("\nTo monitor training:")
     print(f"tensorboard --logdir {MODEL_SAVE_DIR}")
 
 if __name__ == "__main__":
