@@ -25,7 +25,7 @@ def train():
     model.train(
         data=str(DATA_YAML),
         epochs=40,
-        imgsz=640,
+        imgsz=960,
         batch=8,
         project=str(MODEL_SAVE_DIR),
         name="sdd_yolov8s",

@@ -5,7 +5,7 @@ import random
 
 # ================= CONFIG =================
 dataset_path = r"C:\Users\morte\ComputerVisionProject\dataset"
-split = "train"  # change to 'val' or 'test'
+split = "all"  # change to 'val' or 'test'
 
 images_path = os.path.join(dataset_path, "images", split)
 labels_path = os.path.join(dataset_path, "labels", split)
@@ -63,6 +63,7 @@ while True:
 
     cv2.imshow("Annotation Viewer", img)
     key = cv2.waitKey(0 if paused else 30) & 0xFF
+    frame_index = (frame_index + 1) % len(image_files)
 
     if key == ord("q"):
         break
