@@ -10,8 +10,8 @@ Keys: P=pause, R=resume, O=next, I=prev, Q=quit.
 # =========================
 
 # ---- Paths ----
-VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\little\video0\video.mp4"
-ANNOT_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\annotations\little\video0\annotations.txt"
+VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video0.mp4"
+ANNOT_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\annotations\video0.txt"
 
 # If you know the original image size used to annotate (from SDD meta), set here for rescaling
 # e.g., (1920,1080). If None, first frame size is assumed and no scale is applied.
@@ -35,7 +35,6 @@ COLOR_MAP = {
     "Cart": (200, 50, 200),
     "Car": (60, 60, 220),
     "Bus": (0, 120, 200),
-    "Truck": (0, 80, 170),
     "Other": (180, 180, 180),
 }
 
@@ -76,8 +75,11 @@ MIN_BOX_LEGEND_POS = (12, 12)  # top-left corner
 # ======================================
 # BASELINE B: YOLOv8 + BYTETrack-like TbD
 # ======================================
-USE_YOLO = False             # requires `pip install ultralytics`
-YOLO_MODEL = "yolov8s.pt"   # any Ultralytics v8 model
+USE_YOLO = True              # requires `pip install ultralytics`
+# YOLO_MODEL = "yolov8s.pt"   # any Ultralytics v8 model
+
+YOLO_MODEL= r"C:\Users\morte\ComputerVisionProject\models\sdd_yolov8s_resume\weights\best.pt"
+
 YOLO_IMG_SIZE = 960
 YOLO_CONF = 0.30            # detector conf threshold before BYTETrack stages
 YOLO_NMS_IOU = 0.70
@@ -142,39 +144,71 @@ def color_for_label(lbl):
 def parse_annotations(path, out_W, out_H, orig_size=None):
     """
     Returns dict: frame -> list of dicts {id, bbox(xyxy), label}
-    Rescales xy coords if orig_size given.
-    """
-    scale_x, scale_y = 1.0, 1.0
-    if orig_size is not None:
-        ox, oy = orig_size
-        scale_x = out_W / float(ox)
-        scale_y = out_H / float(oy)
+    Rescales xy coords to current video size (out_W, out_H).
 
-    per_frame = {}
+    Logic:
+      - If orig_size is provided: scale = (out_W / orig_W, out_H / orig_H).
+      - Else: infer annotation coordinate space from the maxima of (xmin/xmax, ymin/ymax)
+              across the file, then scale to the video size.
+    """
+    # First pass: read raw and gather maxima
+    raw_per_frame = {}
+    max_x, max_y = 1.0, 1.0
+
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            if not line.strip():
+            line = line.strip()
+            if not line:
                 continue
-            cols = line.strip().split()
+            cols = line.split()
             if len(cols) < 10:
                 continue
-            tid = int(cols[0])
-            xmin = float(cols[1]) * scale_x
-            ymin = float(cols[2]) * scale_y
-            xmax = float(cols[3]) * scale_x
-            ymax = float(cols[4]) * scale_y
+
+            tid   = int(cols[0])
+            xmin  = float(cols[1])
+            ymin  = float(cols[2])
+            xmax  = float(cols[3])
+            ymax  = float(cols[4])
             frame = int(cols[5])
-            # lost = int(cols[6]); occluded = int(cols[7]); generated = int(cols[8])
             label_raw = " ".join(cols[9:])
             label = label_raw.strip().strip('"')
 
-            if frame not in per_frame:
-                per_frame[frame] = []
-            per_frame[frame].append({
-                "id": tid,
-                "bbox": np.array([xmin, ymin, xmax, ymax], dtype=float),
-                "label": label
-            })
+            max_x = max(max_x, xmin, xmax)
+            max_y = max(max_y, ymin, ymax)
+
+            raw_per_frame.setdefault(frame, []).append(
+                {"id": tid, "bbox": np.array([xmin, ymin, xmax, ymax], dtype=float), "label": label}
+            )
+
+    # Determine scale
+    if orig_size is not None:
+        orig_W, orig_H = orig_size
+        scale_x = out_W / float(max(1.0, orig_W))
+        scale_y = out_H / float(max(1.0, orig_H))
+    else:
+        # Infer from annotation extents
+        scale_x = out_W / float(max(1.0, max_x))
+        scale_y = out_H / float(max(1.0, max_y))
+
+    # Second pass: apply scale and clamp
+    per_frame = {}
+    for fr, items in raw_per_frame.items():
+        lst = []
+        for r in items:
+            x1, y1, x2, y2 = r["bbox"]
+            x1 *= scale_x; y1 *= scale_y; x2 *= scale_x; y2 *= scale_y
+            # clamp to image bounds
+            x1 = max(0.0, min(out_W - 1.0, x1))
+            y1 = max(0.0, min(out_H - 1.0, y1))
+            x2 = max(0.0, min(out_W - 1.0, x2))
+            y2 = max(0.0, min(out_H - 1.0, y2))
+            # skip degenerate boxes
+            if x2 <= x1 or y2 <= y1:
+                continue
+            lst.append({"id": r["id"], "bbox": np.array([x1, y1, x2, y2], dtype=float), "label": r["label"]})
+        if lst:
+            per_frame[fr] = lst
+
     return per_frame
 
 # -------------------------

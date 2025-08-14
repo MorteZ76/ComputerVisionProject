@@ -1,3 +1,18 @@
+# the path is YOLO\_WEIGHTS = r"C:\Users\morte\ComputerVisionProject\models\sdd\_yolov8s\_resume\weights\best.pt"
+
+# now i want you to do tracking for this too
+# i want you give me code that they satisfy this :
+# "
+# Implement a detection and tracking system for the moving objects;
+# Compute the trajectories for the detected moving objects;
+# Compute an accuracy metric of the obtained trajectories, using for example the Mean Squared Error;
+# Considering all objects, based on the ground truth, what is the most frequent path? (e.g. objects enter left and exit top)
+
+# Bonus Task:
+# At some point, the roundabout is not visible, thus for each object you have the entry point and the exit point. You are asked to reconstruct the missing trajectory based on past observations and/or prior knowledge. For this task, you can process the ground truth annotations. "
+
+
+
 # scripts/view_yolo_vs_annotations.py
 # One window: rescaled GT annotations. One window: YOLO detections.
 # Keys: p=pause, r=resume, o=next frame, i=prev frame, q=quit.
@@ -11,15 +26,15 @@ from collections import defaultdict
 # =========================
 # HYPERPARAMETERS (EDIT)
 # =========================
-VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video3.mp4"
-ANN_PATH   = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\annotations\video3.txt"
+VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video0.mp4"
+ANN_PATH   = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\annotations\video.txt"
 
 # If you know the original annotation image size, set it to rescale correctly.
 # Else it will infer scale from max(x,y) in the file.
 ANNOT_ORIG_SIZE = None  # e.g., (1920, 1080) or None
 
 # YOLO model weights (your trained checkpoint)
-YOLO_WEIGHTS = r"C:\Users\morte\ComputerVisionProject\models\sdd_yolov8s\weights\best.pt"
+YOLO_WEIGHTS = r"C:\Users\morte\ComputerVisionProject\models\sdd_yolov8s_resume\weights\best.pt"
 
 # YOLO inference
 YOLO_CONF = 0.25
