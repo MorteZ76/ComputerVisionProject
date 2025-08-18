@@ -14,8 +14,8 @@ VIDEO_PATHS: Dict[str, str] = {
     "video0": r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video0.mp4",
     "video3": r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video3.mp4",
 }
-OUTPUT_XLSX = "trajectory_summary.xlsx"
-OUTPUT_JSON = "trajectory_summary.json"
+OUTPUT_XLSX = "new_video0_trajectory_summary.xlsx"
+OUTPUT_JSON = "new_video0_trajectory_summary.json"
 
 AREA_ROWS_3 = ["top", "middle", "bottom"]
 AREA_COLS_3 = ["left", "center", "right"]

@@ -91,6 +91,6 @@ def main(video_num, fps=32):
 
 if __name__ == "__main__":
     # Change these values to customize the video playback
-    VIDEO_NUM = 0  # 0 or 1 to select which video to play
+    VIDEO_NUM = 1  # 0 or 1 to select which video to play
     FPS = 32      # Frames per second of the video
     main(VIDEO_NUM, FPS)
