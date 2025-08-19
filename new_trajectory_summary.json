@@ -1,0 +1,766 @@
+{
+  "videos": {
+    "video0": {
+      "frame_size": [
+        760,
+        1080
+      ],
+      "counts": {
+        "start_3x3": [
+          [
+            2,
+            4,
+            0
+          ],
+          [
+            16,
+            5,
+            11
+          ],
+          [
+            9,
+            18,
+            0
+          ]
+        ],
+        "end_3x3": [
+          [
+            4,
+            5,
+            0
+          ],
+          [
+            13,
+            5,
+            20
+          ],
+          [
+            4,
+            14,
+            0
+          ]
+        ],
+        "pair_9x9_excl_same": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            7,
+            1,
+            6,
+            0
+          ],
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1,
+            2,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            4,
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            2,
+            2,
+            6,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "start_2x2": [
+          [
+            6,
+            7
+          ],
+          [
+            31,
+            21
+          ]
+        ],
+        "end_2x2": [
+          [
+            15,
+            7
+          ],
+          [
+            23,
+            20
+          ]
+        ],
+        "pair_2x2_excl_same": [
+          [
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            4,
+            0,
+            2,
+            0
+          ],
+          [
+            4,
+            1,
+            0,
+            8
+          ],
+          [
+            3,
+            5,
+            1,
+            0
+          ]
+        ],
+        "side_4x4_excl_same": [
+          [
+            0,
+            9,
+            1,
+            10
+          ],
+          [
+            6,
+            0,
+            2,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            2
+          ],
+          [
+            5,
+            7,
+            3,
+            0
+          ]
+        ]
+      },
+      "most_frequent_side_path_excl_same": {
+        "enter": "left",
+        "exit": "bottom",
+        "count": 10
+      },
+      "top3_pairs_3x3_excl_same": [
+        {
+          "start_cell": "middle-left",
+          "end_cell": "middle-right",
+          "count": 7
+        },
+        {
+          "start_cell": "middle-left",
+          "end_cell": "bottom-center",
+          "count": 6
+        },
+        {
+          "start_cell": "bottom-center",
+          "end_cell": "middle-right",
+          "count": 6
+        }
+      ],
+      "top3_pairs_2x2_excl_same": [
+        {
+          "start_cell": "bottom-left",
+          "end_cell": "bottom-right",
+          "count": 8
+        },
+        {
+          "start_cell": "bottom-right",
+          "end_cell": "top-right",
+          "count": 5
+        },
+        {
+          "start_cell": "top-right",
+          "end_cell": "top-left",
+          "count": 4
+        }
+      ]
+    },
+    "video3": {
+      "frame_size": [
+        792,
+        1080
+      ],
+      "counts": {
+        "start_3x3": [
+          [
+            8,
+            93,
+            0
+          ],
+          [
+            71,
+            59,
+            77
+          ],
+          [
+            24,
+            119,
+            0
+          ]
+        ],
+        "end_3x3": [
+          [
+            14,
+            91,
+            1
+          ],
+          [
+            91,
+            63,
+            90
+          ],
+          [
+            15,
+            85,
+            1
+          ]
+        ],
+        "pair_9x9_excl_same": [
+          [
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            3,
+            0,
+            1,
+            7,
+            9,
+            7,
+            1,
+            10,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            6,
+            0,
+            0,
+            5,
+            33,
+            2,
+            8,
+            0
+          ],
+          [
+            1,
+            8,
+            0,
+            9,
+            0,
+            8,
+            3,
+            5,
+            0
+          ],
+          [
+            2,
+            2,
+            0,
+            32,
+            7,
+            0,
+            1,
+            11,
+            0
+          ],
+          [
+            0,
+            2,
+            0,
+            8,
+            3,
+            2,
+            0,
+            2,
+            0
+          ],
+          [
+            3,
+            15,
+            0,
+            19,
+            14,
+            18,
+            1,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "start_2x2": [
+          [
+            74,
+            94
+          ],
+          [
+            116,
+            167
+          ]
+        ],
+        "end_2x2": [
+          [
+            135,
+            62
+          ],
+          [
+            89,
+            165
+          ]
+        ],
+        "pair_2x2_excl_same": [
+          [
+            0,
+            4,
+            14,
+            6
+          ],
+          [
+            39,
+            0,
+            9,
+            10
+          ],
+          [
+            20,
+            6,
+            0,
+            44
+          ],
+          [
+            26,
+            16,
+            20,
+            0
+          ]
+        ],
+        "side_4x4_excl_same": [
+          [
+            0,
+            40,
+            12,
+            18
+          ],
+          [
+            40,
+            0,
+            9,
+            17
+          ],
+          [
+            17,
+            14,
+            0,
+            10
+          ],
+          [
+            37,
+            24,
+            18,
+            0
+          ]
+        ]
+      },
+      "most_frequent_side_path_excl_same": {
+        "enter": "left",
+        "exit": "right",
+        "count": 40
+      },
+      "top3_pairs_3x3_excl_same": [
+        {
+          "start_cell": "middle-left",
+          "end_cell": "middle-right",
+          "count": 33
+        },
+        {
+          "start_cell": "middle-right",
+          "end_cell": "middle-left",
+          "count": 32
+        },
+        {
+          "start_cell": "bottom-center",
+          "end_cell": "middle-left",
+          "count": 19
+        }
+      ],
+      "top3_pairs_2x2_excl_same": [
+        {
+          "start_cell": "bottom-left",
+          "end_cell": "bottom-right",
+          "count": 44
+        },
+        {
+          "start_cell": "top-right",
+          "end_cell": "top-left",
+          "count": 39
+        },
+        {
+          "start_cell": "bottom-right",
+          "end_cell": "top-left",
+          "count": 26
+        }
+      ]
+    },
+    "ALL": {
+      "frame_size": [
+        759,
+        1035
+      ],
+      "counts": {
+        "start_3x3": [
+          [
+            8,
+            88,
+            0
+          ],
+          [
+            67,
+            51,
+            73
+          ],
+          [
+            29,
+            137,
+            2
+          ]
+        ],
+        "end_3x3": [
+          [
+            14,
+            90,
+            2
+          ],
+          [
+            88,
+            48,
+            93
+          ],
+          [
+            18,
+            97,
+            5
+          ]
+        ],
+        "pair_9x9_excl_same": [
+          [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1
+          ],
+          [
+            2,
+            0,
+            2,
+            7,
+            7,
+            6,
+            1,
+            8,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            4,
+            0,
+            0,
+            4,
+            28,
+            3,
+            9,
+            0
+          ],
+          [
+            1,
+            7,
+            0,
+            10,
+            0,
+            6,
+            4,
+            7,
+            0
+          ],
+          [
+            1,
+            3,
+            0,
+            25,
+            5,
+            0,
+            0,
+            11,
+            2
+          ],
+          [
+            1,
+            4,
+            0,
+            8,
+            3,
+            2,
+            0,
+            2,
+            0
+          ],
+          [
+            5,
+            16,
+            0,
+            19,
+            13,
+            25,
+            1,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        ],
+        "start_2x2": [
+          [
+            67,
+            87
+          ],
+          [
+            117,
+            184
+          ]
+        ],
+        "end_2x2": [
+          [
+            121,
+            65
+          ],
+          [
+            93,
+            176
+          ]
+        ],
+        "pair_2x2_excl_same": [
+          [
+            0,
+            2,
+            15,
+            7
+          ],
+          [
+            27,
+            0,
+            7,
+            11
+          ],
+          [
+            22,
+            5,
+            0,
+            41
+          ],
+          [
+            29,
+            16,
+            22,
+            0
+          ]
+        ],
+        "side_4x4_excl_same": [
+          [
+            0,
+            34,
+            10,
+            23
+          ],
+          [
+            34,
+            0,
+            9,
+            16
+          ],
+          [
+            15,
+            13,
+            0,
+            8
+          ],
+          [
+            39,
+            29,
+            22,
+            0
+          ]
+        ]
+      },
+      "most_frequent_side_path_excl_same": {
+        "enter": "bottom",
+        "exit": "left",
+        "count": 39
+      },
+      "top3_pairs_3x3_excl_same": [
+        {
+          "start_cell": "middle-left",
+          "end_cell": "middle-right",
+          "count": 28
+        },
+        {
+          "start_cell": "middle-right",
+          "end_cell": "middle-left",
+          "count": 25
+        },
+        {
+          "start_cell": "bottom-center",
+          "end_cell": "middle-right",
+          "count": 25
+        }
+      ],
+      "top3_pairs_2x2_excl_same": [
+        {
+          "start_cell": "bottom-left",
+          "end_cell": "bottom-right",
+          "count": 41
+        },
+        {
+          "start_cell": "bottom-right",
+          "end_cell": "top-left",
+          "count": 29
+        },
+        {
+          "start_cell": "top-right",
+          "end_cell": "top-left",
+          "count": 27
+        }
+      ]
+    }
+  }
+}

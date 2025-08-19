@@ -1056,6 +1056,9 @@ SHOW_UNITS = "px/frame"
 # --- Metrics / Output ---
 TRAJ_CSV = "video3_trajectoriesNEW.csv"
 COMPUTE_MSE = True
+HOTA_CSV = "video3_hota_breakdown.csv"
+HOTA_TAUS = [i/20 for i in range(1, 20)]  # 0.05..0.95
+
 
 # --- Playback ---
 SKIP_GT_OCCLUDED = True
@@ -1430,6 +1433,10 @@ def scale_bbox(bbox, scale_x, scale_y):
 # ======  METRICS    ======
 # =========================
 
+# =========================
+# ======  METRICS    ======
+# =========================
+
 def mse_per_frame(gt_centers, pred_centers):
     if len(gt_centers) == 0 or len(pred_centers) == 0:
         return None
@@ -1441,6 +1448,88 @@ def mse_per_frame(gt_centers, pred_centers):
     if len(r) == 0:
         return None
     return float(np.mean(cost[r, c]))
+
+
+def build_gt_by_frame(frames_gt, scale_x, scale_y, skip_occ=True):
+    out = {}
+    for f, anns in frames_gt.items():
+        cur = []
+        for ann in anns:
+            if skip_occ and (ann["lost"] == 1 or ann["occluded"] == 1):
+                continue
+            bb = scale_bbox(ann["bbox"], scale_x, scale_y)
+            cur.append((int(ann["id"]), np.array(bb, np.float32)))
+        if cur:
+            out[int(f)] = cur
+    return out
+
+
+def _match_frame(g_ids, g_boxes, t_ids, t_boxes, tau):
+    if len(g_ids) == 0 or len(t_ids) == 0:
+        return [], list(range(len(g_ids))), list(range(len(t_ids)))
+    iou = iou_xyxy(g_boxes, t_boxes)
+    cost = 1.0 - iou
+    cost[iou < tau] = 1e6
+    r, c = linear_sum_assignment(cost)
+    matches, un_g, un_t = [], [], []
+    rset, cset = set(r.tolist()), set(c.tolist())
+    for i in range(len(g_ids)):
+        if i not in rset: un_g.append(i)
+    for j in range(len(t_ids)):
+        if j not in cset: un_t.append(j)
+    for i, j in zip(r, c):
+        if iou[i, j] >= tau:
+            matches.append((i, j))
+        else:
+            un_g.append(i); un_t.append(j)
+    return matches, un_g, un_t
+
+
+def eval_hota(gt_by_frame, pred_by_frame, total_frames, taus):
+    rows = []
+    for tau in taus:
+        TP = FP = FN = 0
+        g2t = {}
+        for f in range(total_frames):
+            g_list = gt_by_frame.get(f, [])
+            t_list = pred_by_frame.get(f, [])
+            g_ids = [gid for gid, _ in g_list]
+            t_ids = [tid for tid, _ in t_list]
+            g_boxes = np.array([b for _, b in g_list], np.float32) if g_list else np.zeros((0, 4), np.float32)
+            t_boxes = np.array([b for _, b in t_list], np.float32) if t_list else np.zeros((0, 4), np.float32)
+            m, ug, ut = _match_frame(g_ids, g_boxes, t_ids, t_boxes, tau)
+            TP += len(m); FP += len(ut); FN += len(ug)
+            g2t[f] = {g_ids[i]: t_ids[j] for i, j in m}
+
+        det_den = TP + 0.5 * (FP + FN)
+        DetA = (TP / det_den) if det_den > 0 else 0.0
+
+        pairs = {(gid, tid) for f, mm in g2t.items() for gid, tid in mm.items()}
+        accs = []
+        for gid, tid in pairs:
+            IDTP = IDFP = IDFN = 0
+            for f in range(total_frames):
+                g_present = any(g == gid for g, _ in gt_by_frame.get(f, []))
+                t_present = any(t == tid for t, _ in pred_by_frame.get(f, []))
+                if g_present and t_present:
+                    if g2t.get(f, {}).get(gid, None) == tid:
+                        IDTP += 1
+                    else:
+                        IDFP += 1; IDFN += 1
+                elif g_present and not t_present:
+                    IDFN += 1
+                elif t_present and not g_present:
+                    IDFP += 1
+            denom = IDTP + 0.5 * (IDFP + IDFN)
+            if denom > 0:
+                accs.append(IDTP / denom)
+
+        AssA = float(np.mean(accs)) if accs else 0.0
+        HOTA = math.sqrt(max(0.0, DetA) * max(0.0, AssA))
+        rows.append({"tau": tau, "DetA": DetA, "AssA": AssA, "HOTA": HOTA})
+
+    df = pd.DataFrame(rows)
+    return df, float(df["DetA"].mean()), float(df["AssA"].mean()), float(df["HOTA"].mean())
 
 
 # =========================
@@ -1461,6 +1550,10 @@ def main():
     frames_gt, (W_ref, H_ref) = parse_sdd_annotations(ANNOT_PATH)
     scale_x = W / float(W_ref if W_ref > 0 else W)
     scale_y = H / float(H_ref if H_ref > 0 else H)
+
+    gt_by_frame = build_gt_by_frame(frames_gt, scale_x, scale_y, SKIP_GT_OCCLUDED)
+    pred_by_frame = defaultdict(list)  # frame -> [(track_id, bbox_xyxy)]
+
 
     model = YOLO(YOLO_WEIGHTS)
     tracker = ByteTrackLike(iou_gate=IOU_GATE, max_age=MAX_AGE, min_hits=MIN_HITS)
@@ -1554,6 +1647,8 @@ def main():
             cx, cy, w, h = t.kf.x[:4, 0]
             if t.time_since_update > MAX_AGE or is_near_border(box, frame.shape):
                 continue
+            pred_by_frame[frame_idx].append((int(t.id), box.astype(np.float32).copy()))
+
 
             # center for display and export
             cx, cy, w, h = (t.kf.x[:4, 0] if HAS_FILTERPY else t.state)
@@ -1669,6 +1764,18 @@ def main():
     if traj_rows:
         pd.DataFrame(traj_rows, columns=["video_id", "track_id", "frame", "x", "y"]).to_csv(TRAJ_CSV, index=False)
         print(f"Trajectories saved to {TRAJ_CSV}")
+    processed_frames = frame_idx + 1  # last index is 0-based
+    if gt_by_frame:
+        df_hota, mean_DetA, mean_AssA, mean_HOTA = eval_hota(
+            gt_by_frame, pred_by_frame, processed_frames, HOTA_TAUS
+        )
+        df_hota.to_csv(HOTA_CSV, index=False)
+        print(f"HOTA saved to {HOTA_CSV}")
+        print(f"Mean DetA: {mean_DetA:.4f}  Mean AssA: {mean_AssA:.4f}  Mean HOTA: {mean_HOTA:.4f}")
+    else:
+        print("HOTA skipped: no GT.")
+
+
 
     if COMPUTE_MSE and len(mse_values) > 0:
         print(f"Overall MSE: {np.mean(mse_values):.3f}")
