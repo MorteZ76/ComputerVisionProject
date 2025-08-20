@@ -92,8 +92,8 @@ import pandas as pd
 from collections import defaultdict, deque
 
 # --- Inputs ---
-VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video3.mp4"
-CSV_PATH   = r"C:\Users\morte\ComputerVisionProject\ComputerVisionProject\video3_trajectoriesNEW.csv"
+VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video0.mp4"
+CSV_PATH   = r"C:\Users\morte\ComputerVisionProject\ComputerVisionProject\video0_trajectoriesNEW.csv"
 
 # --- Viz params ---
 THICKNESS = 2

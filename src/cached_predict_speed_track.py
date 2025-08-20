@@ -1,115 +1,3 @@
-# import os
-# import cv2
-# import sys
-# import math
-# import time
-# import numpy as np
-# import pandas as pd
-# from collections import deque, defaultdict
-
-# # Hungarian
-# try:
-#     from scipy.optimize import linear_sum_assignment
-# except Exception:
-#     print("scipy not found. Install: pip install scipy")
-#     raise
-
-# # Kalman
-# HAS_FILTERPY = True
-# try:
-#     from filterpy.kalman import KalmanFilter
-# except Exception:
-#     HAS_FILTERPY = False
-
-
-# """
-# Human Motion Analysis on SDD
-# Left: GT (rescaled) + GT trajectories
-# Right: Cached detections + ByteTrack-like tracking + trajectories
-# Adds: constant-velocity prediction while lost, removal after 20 lost frames,
-# revival only via high-confidence near match; HOTA + MSE.
-# """
-
-# # =========================
-# # ====== HYPERPARAMS ======
-# # =========================
-
-# # --- Paths ---
-# VIDEO_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\video\video0.mp4"
-# ANNOT_PATH = r"C:\Users\morte\Desktop\Computer Vision\FULL Dataset\annotations\video0.txt"
-# DET_PATH   = r"C:\Users\morte\ComputerVisionProject\ComputerVisionProject\detected\video0_detections.parquet"
-
-# # --- Classes and colors (6 classes as in SDD) ---
-# CLASS_NAMES = {0:"Pedestrian",1:"Biker",2:"Skater",3:"Cart",4:"Car",5:"Bus"}
-# LABEL_TO_ID = {"Pedestrian":0,"Biker":1,"Skater":2,"Cart":3,"Car":4,"Bus":5}
-# CLASS_COLORS = {
-#     0:(0,255,0), 1:(255,0,0), 2:(0,0,255),
-#     3:(255,255,0), 4:(255,0,255), 5:(0,255,255)
-# }
-# LOST_COLOR = (0,165,255)
-
-# PRED_EXPAND = 1.05  # slightly smaller enlarge for lost (fallback)
-# PRED_HORIZON_LOST = 100  # shorter prediction horizon to reduce drift
-# LOST_SIZE_INFLATE = 1.05  # draw/schedule lost boxes ~fixed size, just a tiny inflate
-# SIZE_EMA = 0.25           # smoothing for remembered size from high-conf matches
-# REVIVE_IOU_THRES = 0.2    # try 0.15–0.30  20 -->10
-# REVIVE_CENTER_MULT = 0.90   # was 0.50 in code below
-
-
-# # velocity caps (px/frame)
-# SPEED_CAP_ABS = 4.0            # hard absolute cap
-# SPEED_CAP_DIAG_FRAC = 0.6      # also cap to 60% of current box diagonal
-# MIN_SPEED = 0.2                # treat tiny speeds as 0 to avoid jitter
-
-
-# # --- Detection / NMS ---
-# DET_CONF_THRES = 0.50
-# DET_IOU_NMS = 0.60
-# AGNOSTIC_NMS = True  # agnostic NMS (no class separation)
-
-# # --- ByteTrack-like association ---
-# BYTE_HIGH_THRES = 0.68 # 68 --> 65
-# BYTE_LOW_THRES  = 0.45 # 58 -> 55
-# IOU_GATE        = 0.08
-# MIN_HITS        = 3
-
-# # --- Lost handling ---
-# LOST_KEEP = 140
-# DISABLE_LOW_WHEN_LOST = True
-# CENTER_DIST_GATE = 100.0  # px 60 --> 100
-
-# # --- Drawing / Trajectories ---
-# MISS_FRAMES_TO_DROP_PATH = 5
-# TRAJ_MAX_LEN = 2000
-# FONT = cv2.FONT_HERSHEY_SIMPLEX
-# FONT_SCALE = 0.5
-# THICKNESS = 2
-# ARROW_LEN = 35
-
-# # --- Kinematics averaging ---
-# KINEMA_WINDOW = 10  # 5 --> 10
-# SHOW_UNITS = "px/frame"
-
-# # --- Metrics / Output ---
-# TRAJ_CSV = "video0_trajectoriesNEW.csv"
-# COMPUTE_MSE = True
-# HOTA_CSV = "video0_hota_breakdown.csv"
-# HOTA_TAUS = [i/20 for i in range(1, 20)]  # 0.05..0.95
-
-# # --- Playback ---
-# SKIP_GT_OCCLUDED = True
-# PAUSE_ON_START = False
-
-# # ---- Anti-jerk gates ----
-# SIZE_CHANGE_MAX = 1.1
-# SIZE_CHANGE_MIN = 0.9
-# HIGH_CONF_RELAX = BYTE_HIGH_THRES
-
-# # --- Area-based size sanity for low matches ---
-# AREA_WINDOW = 10
-# AREA_W_MEAN = 0.7
-# AREA_W_LAST = 0.3
-
 import os
 import cv2
 import sys
@@ -139,6 +27,11 @@ Left: GT (rescaled) + GT trajectories
 Right: Cached detections + ByteTrack-like tracking + trajectories
 Adds: constant-velocity prediction while lost, removal after 20 lost frames,
 revival only via high-confidence near match; HOTA + MSE.
+
+MODS: Trajectories only store high-confidence points. Lost/predicted points are
+NOT appended or saved. When a track is revived (high-conf after being lost),
+the last stored high-conf point is connected to the first new high-conf point
+automatically by the deque geometry (no intermediate lost points are stored).
 """
 
 # =========================
@@ -202,7 +95,7 @@ MIN_HITS = 3
 # --- Lost Object Handling ---
 LOST_KEEP = 150
 DISABLE_LOW_WHEN_LOST = True
-CENTER_DIST_GATE = 50.0
+CENTER_DIST_GATE = 75.0
 
 # --- Drawing Settings ---
 MISS_FRAMES_TO_DROP_PATH = 5
@@ -235,15 +128,6 @@ AREA_W_LAST = 0.3
 # ===================================
 # === LOGIC STARTS BELOW THIS POINT ===
 # ===================================
-
-# The code has been structured into a clean configuration block.
-# I will now clean the remaining logic blocks: helper functions, tracker implementation,
-# drawing utilities, evaluation metrics, and the main loop.
-# 
-# To continue cleaning the full logic part of your code, please respond:
-# "continue cleaning the logic"
-
-# Or be specific if you want just a part (e.g., "clean only the tracker").
 
 # =========================
 # ======  HELPERS    ======
@@ -435,7 +319,6 @@ class Track:
         self.history.append((int(cx), int(cy)))
         self.det_hist.append((float(cx), float(cy), int(frame_idx)))
 
-
     def mark_missed(self):
         self.time_since_update += 1; self.age += 1
 
@@ -475,7 +358,6 @@ class ByteTrackLike:
             s = cap / (speed + 1e-6)
             return vx * s, vy * s
         return vx, vy
-
 
     def _append_obs_velocity(self, t: 'Track'):
         # need at least two detection samples
@@ -518,7 +400,6 @@ class ByteTrackLike:
                 vx = vy = 0.0
         return self._cap_velocity(t, vx, vy)
 
-
     def _schedule_future(self, t: 'Track', cur_frame: int, horizon: int = PRED_HORIZON_LOST):
         if HAS_FILTERPY:
             cx, cy, w, h = [float(v) for v in t.kf.x[:4, 0]]
@@ -540,7 +421,6 @@ class ByteTrackLike:
             cyk = cy + k * vy
             vbox = cxcywh_to_xyxy(np.array([cxk, cyk, w, h], np.float32))
             self.future[cur_frame + k][t.id] = vbox
-
 
     def _center_dists(self, boxes_a, boxes_b):
         acx = (boxes_a[:, 0:1] + boxes_a[:, 2:3]) * 0.5
@@ -655,9 +535,6 @@ class ByteTrackLike:
                     t.matched_this_frame = True
                     t.high_conf_match = True
 
-                    # canonical velocity update
-                    # self._append_obs_velocity(t)
-
                     a = _area_xyxy(d["bbox"])
                     dq = self.area_hist.get(t.id)
                     if dq is None:
@@ -712,10 +589,6 @@ class ByteTrackLike:
                 used_high.add(dj)
                 matched_global.add(ti)
 
-                # one canonical place to record velocity (dt-normalized)
-                # self._append_obs_velocity(t)
-
-
         # ---------- STAGE B: revive LOST tracks from FUTURE using leftover HIGH ----------
         if len(high) > 0 and len(used_high) > 0:
             idx_map = [i for i in range(len(high)) if i not in used_high]
@@ -759,9 +632,6 @@ class ByteTrackLike:
                     self._clear_future_for(t.id, frame_idx)
                     matched_global.add(ti)
 
-                    # single canonical velocity update
-                    # self._append_obs_velocity(t)
-
         # Before Stage D
         if frame_idx in self.future and self.future[frame_idx]:
             tids = list(self.future[frame_idx].keys())
@@ -771,9 +641,8 @@ class ByteTrackLike:
                 dist = self._center_dists(pboxes, dboxes)
                 iou  = iou_xyxy(pboxes, dboxes)
                 for j, d in enumerate(high):
-                    if j in used_high: 
+                    if j in used_high:
                         continue
-                    # same gates as above
                     ok = False
                     for r in range(len(pboxes)):
                         diag = self._diag_len(pboxes[r])
@@ -793,9 +662,6 @@ class ByteTrackLike:
                                     ok = True
                                     break
                         if ok: break
-
-                    
-
 
         # ---------- STAGE D: births from completely unused HIGH ----------
         for j in range(len(high)):
@@ -970,8 +836,8 @@ def main():
 
     tracker = ByteTrackLike(iou_gate=IOU_GATE, min_hits=MIN_HITS)
 
-    track_paths = {}
-    track_last_seen = {}
+    track_paths = {}         # stores only HIGH-CONF centers per track
+    track_last_seen = {}     # last frame when we appended a HIGH-CONF point
     track_cls = {}
     gt_paths = defaultdict(deque)
 
@@ -998,6 +864,9 @@ def main():
     if PAUSE_ON_START: print("Paused. Press 'r' to resume, 'p' to pause again.")
 
     while True:
+        # store previous lost set to detect revival this frame
+        prev_lost = tracker.lost_ids.copy()
+
         ret, frame = cap.read()
         if not ret: break
 
@@ -1036,7 +905,7 @@ def main():
             box = _track_box_now(t)
             cx, cy, w, h = (t.kf.x[:4, 0] if HAS_FILTERPY else t.state)
 
-            # log for HOTA: include when matched
+            # log for HOTA: include when matched (keep behavior unchanged)
             if t.matched_this_frame:
                 pred_by_frame[frame_idx].append((int(t.id), box.astype(np.float32).copy()))
 
@@ -1044,27 +913,42 @@ def main():
             if t.matched_this_frame and t.time_since_update == 0:
                 pred_centers.append((float(cx), float(cy)))
 
+            # --- TRAJECTORY STORAGE (MODIFIED) ---
+            # Only store high-confidence matched centers (t.high_conf_match == True).
+            # This prevents storing predicted/lost points. When a track is revived
+            # from lost -> high_conf_match True, appending this point will create a
+            # connection from the last stored high-conf point to the new one.
+            if t.high_conf_match:
+                if t.id not in track_paths:
+                    track_paths[t.id] = deque(maxlen=TRAJ_MAX_LEN)
+                # Append the new high-conf center (this will connect to the previous high-conf center,
+                # if present, and will NOT include any lost-only points).
+                track_paths[t.id].append((int(cx), int(cy)))
+                track_last_seen[t.id] = frame_idx
+                track_cls[t.id] = t.cls
+                # save only the high-conf points to CSV rows
+                traj_rows.append(["video0", t.id, frame_idx, float(cx), float(cy)])
 
-            # UI trails
-            if t.id not in track_paths:
-                track_paths[t.id] = deque(maxlen=TRAJ_MAX_LEN)
-            track_paths[t.id].append((int(cx), int(cy)))
-            track_last_seen[t.id] = frame_idx
-            track_cls[t.id] = t.cls
+            # UI drawing: choose display box based on lost state but do not use predicted points in stored traj
+            if t.id in tracker.lost_ids and t.id in tracker.size_ref:
+                sw, sh = tracker.size_ref[t.id]
+                draw_box = cxcywh_to_xyxy(np.array([cx, cy, sw * LOST_SIZE_INFLATE, sh * LOST_SIZE_INFLATE], np.float32))
+            elif t.id in tracker.lost_ids:
+                draw_box = _expand_xyxy(box, PRED_EXPAND)
+            else:
+                draw_box = box
 
-            # # velocity history for display: observed Δcenter only on high-conf matches
-            # if t.matched_this_frame and t.high_conf_match:
-            #     if t.id not in track_vel_hist:
-            #         track_vel_hist[t.id] = deque(maxlen=KINEMA_WINDOW)
-            #     hx = list(track_paths[t.id])[-2:]
-            #     if len(hx) >= 2:
-            #         (x0,y0),(x1,y1) = hx
-            #         vx = x1 - x0; vy = y1 - y0
-            #     else:
-            #         vx = vy = 0.0
-            #     track_vel_hist[t.id].append((vx, vy))
+            color = LOST_COLOR if (t.id in tracker.lost_ids) else CLASS_COLORS.get(t.cls, (200,200,200))
+            tag = " LOST" if (t.id in tracker.lost_ids) else ""
+            draw_box_id(vis_det, draw_box, cls=t.cls, tid=t.id, conf=t.conf, color=color, label_map=CLASS_NAMES)
+            if tag:
+                cv2.putText(vis_det, tag, (int(draw_box[0]), max(0, int(draw_box[1])-20)), FONT, 0.5, color, 2, cv2.LINE_AA)
 
-            # mean kinematics (pure mean over last K)
+            # draw trajectory using only stored high-conf points (no lost/pred points)
+            if t.id in track_paths:
+                draw_traj(vis_det, list(track_paths[t.id]), color=color)
+
+            # velocity / direction display (from tracker vel_hist) - unchanged
             hist = tracker.vel_hist.get(t.id, [])
             if len(hist) > 0:
                 vx_mean = float(np.mean([v[0] for v in hist])); vy_mean = float(np.mean([v[1] for v in hist]))
@@ -1079,22 +963,6 @@ def main():
             else:
                 speed_val = 0.0; angle_val = 0.0
 
-            # keep lost box size nearly constant using remembered size (fallback to small expand)
-            if t.id in tracker.lost_ids and t.id in tracker.size_ref:
-                sw, sh = tracker.size_ref[t.id]
-                draw_box = cxcywh_to_xyxy(np.array([cx, cy, sw * LOST_SIZE_INFLATE, sh * LOST_SIZE_INFLATE], np.float32))
-            elif t.id in tracker.lost_ids:
-                draw_box = _expand_xyxy(box, PRED_EXPAND)
-            else:
-                draw_box = box
-
-
-            color = LOST_COLOR if (t.id in tracker.lost_ids) else CLASS_COLORS.get(t.cls, (200,200,200))
-            tag = " LOST" if (t.id in tracker.lost_ids) else ""
-            draw_box_id(vis_det, draw_box, cls=t.cls, tid=t.id, conf=t.conf, color=color, label_map=CLASS_NAMES)
-            if tag:
-                cv2.putText(vis_det, tag, (int(draw_box[0]), max(0, int(draw_box[1])-20)), FONT, 0.5, color, 2, cv2.LINE_AA)
-            draw_traj(vis_det, list(track_paths[t.id]), color=color)
             if speed_val >= MIN_SPEED:
                 draw_direction_arrow(vis_det, cx, cy, angle_val, length=ARROW_LEN, color=color)
                 comp = angle_to_compass((angle_val + 360) % 360)
@@ -1104,10 +972,7 @@ def main():
             cv2.putText(vis_det, f"v:{speed_val:.1f} {SHOW_UNITS}  dir:{comp}",
                         (int(cx)+5, int(cy)+15), FONT, 0.5, color, 2, cv2.LINE_AA)
 
-
-            traj_rows.append(["video0", t.id, frame_idx, float(cx), float(cy)])
-
-        # prune stale trails (UI only)
+        # prune stale trails (UI only) based on last stored high-conf point
         stale_ids = [tid for tid,last_seen in list(track_last_seen.items())
                      if frame_idx - last_seen > MISS_FRAMES_TO_DROP_PATH]
         for tid in stale_ids:
@@ -1142,6 +1007,7 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
 
+    # Save only stored high-confidence trajectory points (lost/pred points were never appended)
     if traj_rows:
         pd.DataFrame(traj_rows, columns=["video_id","track_id","frame","x","y"]).to_csv(TRAJ_CSV, index=False)
         print(f"Trajectories saved to {TRAJ_CSV}")
